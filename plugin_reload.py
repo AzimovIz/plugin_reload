@@ -23,7 +23,6 @@ def start(core: VACore):
             "полная перезагрузка": full_reload,
             "перезагрузка всех плагинов": (reloader, "all"),
             "перезагрузи плагин даты": (reloader, "datetime"),
-            "перезагрузить плагин устройств": (reloader, "mqtt"),
             "новый плагин": add_new_plugin,
         }
     }
