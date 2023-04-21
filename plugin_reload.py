@@ -22,7 +22,9 @@ def start(core: VACore):
         "commands": {
             "полная перезагрузка": full_reload,
             "перезагрузка всех плагинов": (reloader, "all"),
-            "перезагрузить плагин даты": (reloader, "datetime"),
+            "перезагрузи плагин даты": (reloader, "datetime"),
+            "перезагрузить плагин устройств": (reloader, "mqtt"),
+            "новый плагин": add_new_plugin,
         }
     }
 
@@ -31,8 +33,9 @@ def start(core: VACore):
 
 def start_with_options(core: VACore, manifest: dict):
     core.no_reload = manifest["default_options"]["no_reload"]
+    core.reload_list, _ = get_reload_files(core.no_reload)
     if manifest["default_options"]["reload_on_edit"]:  # если reload_on_edit то запускаем поток слежения
-        thread = threading.Thread(target=auto_reinit, args=(manifest["default_options"]["no_reload"],))
+        thread = threading.Thread(target=auto_reinit, args=(core.no_reload,))
         thread.start()
 
 
@@ -53,18 +56,28 @@ def full_reload(core: VACore = None, phrase: str = None, command: str = None):  
 
 
 def reloader(core: VACore, phrase: str = None, command: str = None):
-    if command == "all":  # перезагружает только плагины
-        plugins, _ = get_reload_files(core.no_reload)
-        for plugin in plugins:
-            reloader(core, command=plugin[15:-3])
+    if command == "all":  # перезагружает все плагины
+        for plugin in core.reload_list:
+            reloader(core, command=plugin[8:-3])
 
         core.say("Все плагины перезагружены")
 
     else:  # перезагружает конкретный плагин
-        plugin = f"plugin_{command}"
-        del sys.modules["plugins."+plugin]
-        core.init_plugin(plugin)
-        core.say(plugin+" перезагружен")
+        if command in core.reload_list:
+            try:
+                del sys.modules["plugins."+command]
+            except Exception as err:
+                print(f"Не удалось деимпортровать плагин {command}: {err}")
+        core.init_plugin(command)
+
+
+def add_new_plugin(core: VACore = None, phrase: str = None, command: str = None):
+    plugins, _ = get_reload_files(core.no_reload)
+    new_plugin = list([plugin for plugin in plugins if plugin not in core.reload_list])
+    if len(new_plugin):
+        plugin_name = new_plugin[0]
+        reloader(core, command=plugin_name[8:-3])
+        core.reload_list.append(plugin_name)
 
 
 def file_as_bytes(file):
