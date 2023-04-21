@@ -71,6 +71,8 @@ def reloader(core: VACore, phrase: str = None, command: str = None):
 
 
 def add_new_plugin(core: VACore = None, phrase: str = None, command: str = None):
+    # импортирует ОДИН новый плагин из папки plugins если он не импортирован ранее
+    # при добавлении нескольких плагинов надо несколько раз вызвать функцию
     plugins, _ = get_reload_files(core.no_reload)
     new_plugin = list([plugin for plugin in plugins if plugin not in core.reload_list])
     if len(new_plugin):
